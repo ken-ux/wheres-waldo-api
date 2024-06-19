@@ -25,11 +25,3 @@ CREATE TABLE
         user_score INTEGER,
         FOREIGN KEY (game_id) REFERENCES game (game_id)
     );
-
--- Insert data into game table since it has no FKs.
-INSERT INTO
-    game (game_name)
-VALUES
-    ('easy'), -- Can't use double quotes otherwise throws a syntax error.
-    ('medium'),
-    ('hard');
