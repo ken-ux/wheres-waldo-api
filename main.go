@@ -29,10 +29,17 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
 		os.Exit(1)
-	} else {
-		fmt.Println("Database connected.")
 	}
 	defer dbpool.Close()
+
+	// Example of a database query.
+	// var game_id int
+	// err = dbpool.QueryRow(context.Background(), "SELECT game_id FROM game WHERE game_name = 'hard'").Scan(&game_id)
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// fmt.Println(game_id)
 
 	router := gin.Default()
 	router.GET("/:difficulty/:goal", getGoals)
