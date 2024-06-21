@@ -17,6 +17,8 @@ type LeaderboardForm struct {
 	Mode string `form:"mode" binding:"required"`
 }
 
+var dbpool *pgxpool.Pool
+
 func main() {
 	// Load environment.
 	err := godotenv.Load()
@@ -25,8 +27,9 @@ func main() {
 	}
 
 	// Connect to database.
-	dbpool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
-	if err != nil {
+	var dbpool_err error
+	dbpool, dbpool_err = pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
+	if dbpool_err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
 		os.Exit(1)
 	}
@@ -52,9 +55,16 @@ func main() {
 
 // Get all goals.
 func getGoals(c *gin.Context) {
-	difficulty := c.Param("difficulty")
-	goal := c.Param("goal")
-	c.IndentedJSON(http.StatusOK, difficulty+" "+goal)
+	// difficulty := c.Param("difficulty")
+	// goal := c.Param("goal")
+	// c.IndentedJSON(http.StatusOK, difficulty+" "+goal)
+	var game_id int
+	err := dbpool.QueryRow(context.Background(), "SELECT game_id FROM game WHERE game_name = 'hard'").Scan(&game_id)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
+		os.Exit(1)
+	}
+	c.IndentedJSON(http.StatusOK, game_id)
 }
 
 func getLeaderboards(c *gin.Context) {
