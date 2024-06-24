@@ -87,7 +87,10 @@ func getLeaderboards(c *gin.Context) {
 	for rows.Next() {
 		// Loop through rows, using Scan to assign column data to struct fields.
 		var user User
-		rows.Scan(&user.Name, &user.Score)
+		if err := rows.Scan(&user.Name, &user.Score); err != nil {
+			fmt.Fprintf(os.Stderr, "Query failed: %v\n", err)
+			os.Exit(1)
+		}
 		users = append(users, user)
 	}
 
@@ -96,7 +99,7 @@ func getLeaderboards(c *gin.Context) {
 	// fmt.Println(string(usersJson))
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err)
-		return
+		os.Exit(1)
 	}
 	c.IndentedJSON(http.StatusOK, usersJson)
 }
