@@ -14,13 +14,12 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// type Goal struct {
-// 	goal_id    int
-// 	game_id    int
-// 	goal_desc  string
-// 	goal_pos_x int
-// 	goal_pos_y int
-// }
+type Goal struct {
+	// Capitalization doesn't matter for these fields because they're not being converted to JSON.
+	goal_desc  string
+	goal_pos_x int
+	goal_pos_y int
+}
 
 type User struct {
 	Difficulty string
@@ -65,7 +64,7 @@ func main() {
 	// Allow all origins.
 	router.Use(cors.Default())
 
-	router.GET("/:difficulty/:goal", getGoals)
+	router.GET("/:difficulty/:goal", getGoal)
 	// router.POST("/:difficulty/:goal", postGoals)
 	router.GET("/leaderboards", getLeaderboards)
 	router.POST("/leaderboards", postLeaderboards)
@@ -73,11 +72,24 @@ func main() {
 	router.Run("localhost:8080")
 }
 
-// Get all goals.
-func getGoals(c *gin.Context) {
+// Get specific goal data.
+func getGoal(c *gin.Context) {
 	difficulty := c.Param("difficulty")
 	goal := c.Param("goal")
-	c.IndentedJSON(http.StatusOK, difficulty+" "+goal)
+
+	fmt.Println(goal)
+
+	var goal_data Goal
+	err := dbpool.QueryRow(context.Background(), fmt.Sprintf(`SELECT goal_desc, goal_pos_x, goal_pos_y FROM goal INNER JOIN game ON goal.game_id = game.game_id WHERE game_name = '%s' AND goal_desc = '%s'`, difficulty, goal)).Scan(&goal_data.goal_desc, &goal_data.goal_pos_x, &goal_data.goal_pos_y)
+
+	fmt.Println(goal_data)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Query failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	c.IndentedJSON(http.StatusOK, goal_data)
 }
 
 func getLeaderboards(c *gin.Context) {
