@@ -101,12 +101,12 @@ func getLeaderboards(c *gin.Context) {
 
 	// Convert struct to JSON.
 	usersJson, err := json.Marshal(users)
-	// fmt.Println(string(usersJson))
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err)
 		os.Exit(1)
 	}
-	c.IndentedJSON(http.StatusOK, usersJson)
+	// Send JSON converted from bytes to a readable format.
+	c.IndentedJSON(http.StatusOK, string(usersJson))
 }
 
 // Post new score to leaderboards.
