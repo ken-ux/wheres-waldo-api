@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -59,6 +60,10 @@ func main() {
 	// fmt.Println(game_id)
 
 	router := gin.Default()
+
+	// Allow all origins.
+	router.Use(cors.Default())
+
 	router.GET("/:difficulty/:goal", getGoals)
 	// router.POST("/:difficulty/:goal", postGoals)
 	router.GET("/leaderboards", getLeaderboards)
