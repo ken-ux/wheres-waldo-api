@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,6 +12,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
+
+// type Goal struct {
+// 	goal_id    int
+// 	game_id    int
+// 	goal_desc  string
+// 	goal_pos_x int
+// 	goal_pos_y int
+// }
+
+type User struct {
+	Name  string
+	Score int
+}
 
 type LeaderboardForm struct {
 	Name string `form:"name" binding:"required"`
@@ -55,20 +69,36 @@ func main() {
 
 // Get all goals.
 func getGoals(c *gin.Context) {
-	// difficulty := c.Param("difficulty")
-	// goal := c.Param("goal")
-	// c.IndentedJSON(http.StatusOK, difficulty+" "+goal)
-	var game_id int
-	err := dbpool.QueryRow(context.Background(), "SELECT game_id FROM game WHERE game_name = 'hard'").Scan(&game_id)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
-		os.Exit(1)
-	}
-	c.IndentedJSON(http.StatusOK, game_id)
+	difficulty := c.Param("difficulty")
+	goal := c.Param("goal")
+	c.IndentedJSON(http.StatusOK, difficulty+" "+goal)
 }
 
 func getLeaderboards(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, "Leaderboards")
+	var users []User
+	rows, err := dbpool.Query(context.Background(), `SELECT user_name, user_score FROM "user" INNER JOIN game ON "user".game_id = game.game_id`)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Query failed: %v\n", err)
+		os.Exit(1)
+	}
+	defer rows.Close()
+
+	// Iterate through all rows returned from the query.
+	for rows.Next() {
+		// Loop through rows, using Scan to assign column data to struct fields.
+		var user User
+		rows.Scan(&user.Name, &user.Score)
+		users = append(users, user)
+	}
+
+	// Convert struct to JSON.
+	usersJson, err := json.Marshal(users)
+	// fmt.Println(string(usersJson))
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err)
+		return
+	}
+	c.IndentedJSON(http.StatusOK, usersJson)
 }
 
 // Post new score to leaderboards.
