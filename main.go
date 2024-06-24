@@ -23,8 +23,9 @@ import (
 // }
 
 type User struct {
-	Name  string
-	Score int
+	Difficulty string
+	Name       string
+	Score      int
 }
 
 type LeaderboardForm struct {
@@ -81,7 +82,7 @@ func getGoals(c *gin.Context) {
 
 func getLeaderboards(c *gin.Context) {
 	var users []User
-	rows, err := dbpool.Query(context.Background(), `SELECT user_name, user_score FROM "user" INNER JOIN game ON "user".game_id = game.game_id`)
+	rows, err := dbpool.Query(context.Background(), `SELECT game_name, user_name, user_score FROM "user" INNER JOIN game ON "user".game_id = game.game_id`)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Query failed: %v\n", err)
 		os.Exit(1)
@@ -92,7 +93,7 @@ func getLeaderboards(c *gin.Context) {
 	for rows.Next() {
 		// Loop through rows, using Scan to assign column data to struct fields.
 		var user User
-		if err := rows.Scan(&user.Name, &user.Score); err != nil {
+		if err := rows.Scan(&user.Difficulty, &user.Name, &user.Score); err != nil {
 			fmt.Fprintf(os.Stderr, "Query failed: %v\n", err)
 			os.Exit(1)
 		}
