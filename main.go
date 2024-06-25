@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,11 +13,14 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type Message struct {
+	Message string
+}
+
 type Goal struct {
-	// Capitalization doesn't matter for these fields because they're not being converted to JSON.
-	goal_desc  string
-	goal_pos_x int
-	goal_pos_y int
+	Desc  string
+	Pos_X int
+	Pos_Y int
 }
 
 type User struct {
@@ -74,19 +76,15 @@ func main() {
 // Get specific goal data.
 // Example query: goal?difficulty=hard&desc=Cowboy%20on%20Horse
 func getGoal(c *gin.Context) {
+	var goal_data Goal
 	difficulty := c.Query("difficulty")
 	desc := c.Query("desc")
 
-	fmt.Println(desc)
-
-	var goal_data Goal
-	err := dbpool.QueryRow(context.Background(), fmt.Sprintf(`SELECT goal_desc, goal_pos_x, goal_pos_y FROM goal INNER JOIN game ON goal.game_id = game.game_id WHERE game_name = '%s' AND goal_desc = '%s'`, difficulty, desc)).Scan(&goal_data.goal_desc, &goal_data.goal_pos_x, &goal_data.goal_pos_y)
-
-	fmt.Println(goal_data)
-
+	err := dbpool.QueryRow(context.Background(), fmt.Sprintf(`SELECT goal_desc, goal_pos_x, goal_pos_y FROM goal INNER JOIN game ON goal.game_id = game.game_id WHERE game_name = '%s' AND goal_desc = '%s'`, difficulty, desc)).Scan(&goal_data.Desc, &goal_data.Pos_X, &goal_data.Pos_Y)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Query failed: %v\n", err)
-		os.Exit(1)
+		c.IndentedJSON(http.StatusBadRequest, Message{"Query failed."})
+		return
 	}
 
 	c.IndentedJSON(http.StatusOK, goal_data)
@@ -112,14 +110,12 @@ func getLeaderboards(c *gin.Context) {
 		users = append(users, user)
 	}
 
-	// Convert struct to JSON.
-	usersJson, err := json.Marshal(users)
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err)
 		os.Exit(1)
 	}
-	// Send JSON converted from bytes to a readable format.
-	c.IndentedJSON(http.StatusOK, string(usersJson))
+
+	c.IndentedJSON(http.StatusOK, users)
 }
 
 // Post new score to leaderboards.
