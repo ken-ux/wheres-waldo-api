@@ -30,8 +30,9 @@ type User struct {
 }
 
 type LeaderboardForm struct {
-	Name string `form:"name" binding:"required"`
-	Mode string `form:"mode" binding:"required"`
+	Name       string `form:"name" binding:"required"`
+	Difficulty string `form:"difficulty" binding:"required"`
+	Score      int    `form:"score" binding:"required"`
 }
 
 var dbpool *pgxpool.Pool
@@ -90,6 +91,7 @@ func getGoal(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, goal_data)
 }
 
+// Get leaderboard data.
 func getLeaderboards(c *gin.Context) {
 	var users []User
 	rows, err := dbpool.Query(context.Background(), `SELECT game_name, user_name, user_score FROM "user" INNER JOIN game ON "user".game_id = game.game_id`)
@@ -125,6 +127,39 @@ func postLeaderboards(c *gin.Context) {
 		c.String(http.StatusBadRequest, "bad request: %v", err)
 		return
 	}
+
+	// Begin transaction.
+	tx, err := dbpool.Begin(context.Background())
+	if err != nil {
+		c.String(http.StatusBadRequest, "bad request: %v", err)
+		return
+	}
+
+	// Rollback transaction if it doesn't commit successfully.
+	defer tx.Rollback(context.Background())
+
+	// Execute insert statement.
+	_, err = tx.Exec(context.Background(), fmt.Sprintf(
+		`INSERT INTO "user" (game_id, user_name, user_score)
+		VALUES (
+			(SELECT game_id FROM game WHERE game_name = '%s')
+			,
+			%s,
+			%d
+		)`,
+		form.Difficulty, form.Name, form.Score))
+	if err != nil {
+		c.String(http.StatusBadRequest, "bad request: %v", err)
+		return
+	}
+
+	// Commit
+	err = tx.Commit(context.Background())
+	if err != nil {
+		c.String(http.StatusBadRequest, "bad request: %v", err)
+		return
+	}
+
 	// c.String(200, "Hello %s", form.Name)
 	c.IndentedJSON(http.StatusOK, "Leaderboard posted")
 }
