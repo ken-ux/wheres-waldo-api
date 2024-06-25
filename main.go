@@ -14,19 +14,19 @@ import (
 )
 
 type Message struct {
-	Message string
+	Message string `json:"message"`
 }
 
 type Goal struct {
-	Desc  string
-	Pos_X int
-	Pos_Y int
+	Desc  string `json:"desc"`
+	Pos_X int    `json:"pos_x"`
+	Pos_Y int    `json:"pos_y"`
 }
 
 type User struct {
-	Difficulty string
-	Name       string
-	Score      int
+	Difficulty string `json:"difficulty"`
+	Name       string `json:"name"`
+	Score      int    `json:"score"`
 }
 
 type LeaderboardForm struct {
