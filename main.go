@@ -123,15 +123,17 @@ func getLeaderboards(c *gin.Context) {
 // Post new score to leaderboards.
 func postLeaderboards(c *gin.Context) {
 	var form LeaderboardForm
+
+	// Bind JSON fields to form variable.
 	if err := c.BindJSON(&form); err != nil {
-		c.String(http.StatusBadRequest, "bad request: %v", err)
+		c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("bad request: %v", err))
 		return
 	}
 
 	// Begin transaction.
 	tx, err := dbpool.Begin(context.Background())
 	if err != nil {
-		c.String(http.StatusBadRequest, "bad request: %v", err)
+		c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("bad request: %v", err))
 		return
 	}
 
@@ -144,19 +146,19 @@ func postLeaderboards(c *gin.Context) {
 		VALUES (
 			(SELECT game_id FROM game WHERE game_name = '%s')
 			,
-			%s,
+			'%s',
 			%d
 		)`,
 		form.Difficulty, form.Name, form.Score))
 	if err != nil {
-		c.String(http.StatusBadRequest, "bad request: %v", err)
+		c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("bad request: %v", err))
 		return
 	}
 
 	// Commit
 	err = tx.Commit(context.Background())
 	if err != nil {
-		c.String(http.StatusBadRequest, "bad request: %v", err)
+		c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("bad request: %v", err))
 		return
 	}
 
