@@ -64,8 +64,7 @@ func main() {
 	// Allow all origins.
 	router.Use(cors.Default())
 
-	router.GET("/:difficulty/:goal", getGoal)
-	// router.POST("/:difficulty/:goal", postGoals)
+	router.GET("/goal", getGoal)
 	router.GET("/leaderboards", getLeaderboards)
 	router.POST("/leaderboards", postLeaderboards)
 
@@ -73,14 +72,15 @@ func main() {
 }
 
 // Get specific goal data.
+// Example query: goal?difficulty=hard&desc=Cowboy%20on%20Horse
 func getGoal(c *gin.Context) {
-	difficulty := c.Param("difficulty")
-	goal := c.Param("goal")
+	difficulty := c.Query("difficulty")
+	desc := c.Query("desc")
 
-	fmt.Println(goal)
+	fmt.Println(desc)
 
 	var goal_data Goal
-	err := dbpool.QueryRow(context.Background(), fmt.Sprintf(`SELECT goal_desc, goal_pos_x, goal_pos_y FROM goal INNER JOIN game ON goal.game_id = game.game_id WHERE game_name = '%s' AND goal_desc = '%s'`, difficulty, goal)).Scan(&goal_data.goal_desc, &goal_data.goal_pos_x, &goal_data.goal_pos_y)
+	err := dbpool.QueryRow(context.Background(), fmt.Sprintf(`SELECT goal_desc, goal_pos_x, goal_pos_y FROM goal INNER JOIN game ON goal.game_id = game.game_id WHERE game_name = '%s' AND goal_desc = '%s'`, difficulty, desc)).Scan(&goal_data.goal_desc, &goal_data.goal_pos_x, &goal_data.goal_pos_y)
 
 	fmt.Println(goal_data)
 
