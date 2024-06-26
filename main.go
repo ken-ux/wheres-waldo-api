@@ -94,7 +94,13 @@ func getGoal(c *gin.Context) {
 // Get leaderboard data.
 func getLeaderboards(c *gin.Context) {
 	var users []User
-	rows, err := dbpool.Query(context.Background(), `SELECT game_name, user_name, user_score FROM "user" INNER JOIN game ON "user".game_id = game.game_id`)
+	difficulty := c.Query("difficulty")
+
+	rows, err := dbpool.Query(context.Background(), fmt.Sprintf(
+		`SELECT game_name, user_name, user_score 
+		FROM "user" INNER JOIN game 
+		ON "user".game_id = game.game_id 
+		WHERE game_name = '%s'`, difficulty))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Query failed: %v\n", err)
 		os.Exit(1)
