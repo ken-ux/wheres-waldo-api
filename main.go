@@ -98,7 +98,8 @@ func getLeaderboards(c *gin.Context) {
 
 	rows, err := dbpool.Query(context.Background(), fmt.Sprintf(
 		`SELECT game_name, user_name, user_score 
-		FROM "user" INNER JOIN game 
+		FROM "user" 
+		INNER JOIN game 
 		ON "user".game_id = game.game_id 
 		WHERE game_name = '%s'`, difficulty))
 	if err != nil {
@@ -150,8 +151,7 @@ func postLeaderboards(c *gin.Context) {
 	_, err = tx.Exec(context.Background(), fmt.Sprintf(
 		`INSERT INTO "user" (game_id, user_name, user_score)
 		VALUES (
-			(SELECT game_id FROM game WHERE game_name = '%s')
-			,
+			(SELECT game_id FROM game WHERE game_name = '%s'),
 			'%s',
 			%d
 		)`,
