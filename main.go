@@ -65,7 +65,7 @@ func main() {
 	router.GET("/leaderboards", getLeaderboards)
 	router.POST("/leaderboards", postLeaderboards)
 
-	router.Run("localhost:8080")
+	router.Run(":80")
 }
 
 // Get specific goal data.
