@@ -65,7 +65,7 @@ func main() {
 	router.GET("/leaderboards", getLeaderboards)
 	router.POST("/leaderboards", postLeaderboards)
 
-	router.Run(":80")
+	router.Run()
 }
 
 // Get specific goal data.
