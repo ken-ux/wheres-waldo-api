@@ -102,7 +102,8 @@ func getLeaderboards(c *gin.Context) {
 		INNER JOIN game 
 		ON "user".game_id = game.game_id 
 		WHERE game_name = '%s'
-		ORDER BY user_score ASC`, difficulty))
+		ORDER BY user_score ASC
+		LIMIT 15`, difficulty))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Query failed: %v\n", err)
 		os.Exit(1)
