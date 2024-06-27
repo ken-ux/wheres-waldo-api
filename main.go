@@ -53,15 +53,6 @@ func main() {
 	}
 	defer dbpool.Close()
 
-	// Example of a database query.
-	// var game_id int
-	// err = dbpool.QueryRow(context.Background(), "SELECT game_id FROM game WHERE game_name = 'hard'").Scan(&game_id)
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
-	// 	os.Exit(1)
-	// }
-	// fmt.Println(game_id)
-
 	router := gin.Default()
 
 	// Allow all origins.
@@ -81,7 +72,15 @@ func getGoal(c *gin.Context) {
 	difficulty := c.Query("difficulty")
 	desc := c.Query("desc")
 
-	err := dbpool.QueryRow(context.Background(), fmt.Sprintf(`SELECT goal_desc, goal_pos_x, goal_pos_y FROM goal INNER JOIN game ON goal.game_id = game.game_id WHERE game_name = '%s' AND goal_desc = '%s'`, difficulty, desc)).Scan(&goal_data.Desc, &goal_data.Pos_X, &goal_data.Pos_Y)
+	err := dbpool.QueryRow(context.Background(), fmt.Sprintf(
+		`SELECT goal_desc, goal_pos_x, goal_pos_y 
+		FROM goal 
+		INNER JOIN game 
+		ON goal.game_id = game.game_id 
+		WHERE game_name = '%s' 
+		AND goal_desc = '%s'`,
+		difficulty, desc)).
+		Scan(&goal_data.Desc, &goal_data.Pos_X, &goal_data.Pos_Y)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Query failed: %v\n", err)
 		c.IndentedJSON(http.StatusBadRequest, Message{"Query failed."})
@@ -106,8 +105,12 @@ func getLeaderboards(c *gin.Context) {
 		LIMIT 15`, difficulty))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Query failed: %v\n", err)
-		os.Exit(1)
+		return
 	}
+
+	// Releases any resources held by the rows no matter how the function returns.
+	// Looping all the way through the rows also closes it implicitly,
+	// but it is better to use defer to make sure rows is closed no matter what.
 	defer rows.Close()
 
 	// Iterate through all rows returned from the query.
@@ -115,15 +118,16 @@ func getLeaderboards(c *gin.Context) {
 		// Loop through rows, using Scan to assign column data to struct fields.
 		var user User
 		if err := rows.Scan(&user.Difficulty, &user.Name, &user.Score); err != nil {
-			fmt.Fprintf(os.Stderr, "Query failed: %v\n", err)
-			os.Exit(1)
+			c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("Query failed: %v", err))
+			return
 		}
 		users = append(users, user)
 	}
 
-	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err)
-		os.Exit(1)
+	// Check if there were any issues when reading rows.
+	if err := rows.Err(); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("Error reading queries: %v", err))
+		return
 	}
 
 	c.IndentedJSON(http.StatusOK, users)
@@ -135,14 +139,14 @@ func postLeaderboards(c *gin.Context) {
 
 	// Bind JSON fields to form variable.
 	if err := c.BindJSON(&form); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("bad request: %v", err))
+		c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return
 	}
 
 	// Begin transaction.
 	tx, err := dbpool.Begin(context.Background())
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("bad request: %v", err))
+		c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return
 	}
 
@@ -159,17 +163,16 @@ func postLeaderboards(c *gin.Context) {
 		)`,
 		form.Difficulty, form.Name, form.Score))
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("bad request: %v", err))
+		c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return
 	}
 
-	// Commit
+	// Commit transaction.
 	err = tx.Commit(context.Background())
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("bad request: %v", err))
+		c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("Bad request: %v", err))
 		return
 	}
 
-	// c.String(200, "Hello %s", form.Name)
 	c.IndentedJSON(http.StatusOK, "Leaderboard posted")
 }
