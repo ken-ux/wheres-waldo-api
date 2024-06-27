@@ -38,17 +38,20 @@ type LeaderboardForm struct {
 var dbpool *pgxpool.Pool
 
 func main() {
-	// Load environment.
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	// Load dev environment.
+	env := os.Getenv("ENV_NAME")
+	if env != "production" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
 	}
 
 	// Connect to database.
 	var dbpool_err error
 	dbpool, dbpool_err = pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 	if dbpool_err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", dbpool_err)
 		os.Exit(1)
 	}
 	defer dbpool.Close()
